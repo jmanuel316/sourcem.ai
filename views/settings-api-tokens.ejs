@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>API tokens — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { current: 'settings' }) %>
+  <main class="settings-main">
+    <h1>API tokens</h1>
+    <p class="muted">Tokens authenticate as <code>Authorization: Bearer smai_…</code>. Keep them secret — we only show the token once at mint time.</p>
+    <form id="mint-form" onsubmit="return mintToken(event)" class="settings-card">
+      <label>Label
+        <input type="text" name="label" required placeholder="e.g. Ingestion bot">
+      </label>
+      <button type="submit" class="btn-primary">Mint token</button>
+    </form>
+    <pre id="mint-output" class="code-block" style="display:none"></pre>
+    <% if (items && items.length) { %>
+      <table class="data-table">
+        <thead><tr><th>Label</th><th>Created</th><th>Last used</th><th>Revoked</th><th></th></tr></thead>
+        <tbody>
+        <% items.forEach(it => { %>
+          <tr>
+            <td><%= it.label %></td>
+            <td><%= new Date(it.created_at).toLocaleDateString() %></td>
+            <td><%= it.last_used_at ? new Date(it.last_used_at).toLocaleString() : '—' %></td>
+            <td><%= it.revoked_at ? 'yes' : 'no' %></td>
+            <td>
+              <% if (!it.revoked_at) { %>
+                <button class="btn-link" onclick="revokeToken(<%= it.id %>)">Revoke</button>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="muted">No tokens yet.</p>
+    <% } %>
+  </main>
+  <script>
+    async function mintToken(event) {
+      event.preventDefault();
+      const fd = new FormData(event.target);
+      const res = await fetch('/api/api-tokens', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-csrf-token': window.__csrf || '' }, body: JSON.stringify({ label: fd.get('label') }) });
+      const data = await res.json();
+      const out = document.getElementById('mint-output');
+      if (res.ok) {
+        out.textContent = `Token (copy now): ${data.token}\nLabel: ${data.label}\nScopes: ${(data.scopes||[]).join(', ')}`;
+        out.style.display = 'block';
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        out.textContent = `Mint failed: ${data.error}`;
+      }
+      return false;
+    }
+    async function revokeToken(id) {
+      if (!confirm('Revoke this token?')) return;
+      const res = await fetch(`/api/api-tokens/${id}`, { method: 'DELETE', headers: { 'x-csrf-token': window.__csrf || '' } });
+      if (res.ok) location.reload();
+    }
+  </script>
+</body>
+</html>

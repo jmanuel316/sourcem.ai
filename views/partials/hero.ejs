@@ -1,0 +1,147 @@
+<section class="hero">
+  <div class="hero-inner hero-inner--single">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Sales Intelligence Layer</div>
+      <h1 class="hero-headline"><%= abVariant === 'b' ? 'Your pipeline, ranked by purchase intent.' : 'Know which accounts to prioritize — every morning.' %></h1>
+      <p class="hero-sub">SourcemAI monitors funding events, hiring surges, and CRM activity — then delivers a ranked daily digest of your highest-intent accounts. No dashboards to dig through. No guesswork.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var EXP = 'hero-headline';
+  var vid = localStorage.getItem('polsia_vid') || null;
+
+  function getVariant() {
+    var stored = localStorage.getItem('ab_' + EXP);
+    if (stored) return stored;
+    var assigned = Math.random() < 0.5 ? 'a' : 'b';
+    localStorage.setItem('ab_' + EXP, assigned);
+    return assigned;
+  }
+
+  var variant = getVariant();
+  var ctaClicked = false;
+
+  // Track impression
+  fetch('/api/ab-test/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ experiment: EXP, variant: variant, event: 'impression', visitor_id: vid }),
+    keepalive: true
+  });
+
+  // Track CTA clicks to pricing cards
+  document.querySelectorAll('.pricing-cta').forEach(function (el) {
+    el.addEventListener('click', function () {
+      if (!ctaClicked) {
+        ctaClicked = true;
+        fetch('/api/ab-test/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ experiment: EXP, variant: variant, event: 'cta_click', visitor_id: vid }),
+          keepalive: true
+        });
+      }
+    });
+  });
+})();
+</script>
+
+<!-- Alternating image+text sections — replaces the carousel -->
+<section class="alt-section alt-section-1">
+  <div class="alt-section-inner">
+    <div class="alt-section-text">
+      <div class="section-label">Desktop View</div>
+      <h2 class="alt-section-headline">Your entire pipeline, ranked by signal.</h2>
+      <p class="alt-section-body">
+        Get a real-time view of your entire team's account pipeline — who's working what, where the strongest intent signals are, and who's at risk of going dark. SourcemAI aggregates signals across every rep so managers can coach to close, not to guess.
+      </p>
+      <ul class="alt-bullet-list">
+        <li>
+          <span class="alt-bullet-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" stroke="#D4A843" stroke-width="1.5"/>
+              <path d="M5 8l2 2 4-4" stroke="#D4A843" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span><strong>Signal scores</strong> — aggregate funding, hiring, and CRM signals into a single rankable number</span>
+        </li>
+        <li>
+          <span class="alt-bullet-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" stroke="#D4A843" stroke-width="1.5"/>
+              <path d="M5 8l2 2 4-4" stroke="#D4A843" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span><strong>Team visibility</strong> — see who's actioned what across the full GTM roster</span>
+        </li>
+        <li>
+          <span class="alt-bullet-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" stroke="#D4A843" stroke-width="1.5"/>
+              <path d="M5 8l2 2 4-4" stroke="#D4A843" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span><strong>Coach to close</strong> — surface the accounts that need attention most urgently</span>
+        </li>
+      </ul>
+    </div>
+    <div class="alt-section-image">
+      <img
+        src="https://pub-629428d185ca4960a0a73c850d32294b.r2.dev/company_160798/images/2a10cd03-9d4b-4905-826f-88e449a6d058.jpg"
+        alt="SourcemAI desktop view — Team Insights dashboard"
+        loading="lazy"
+      >
+    </div>
+  </div>
+</section>
+
+<section class="alt-section alt-section-2">
+  <div class="alt-section-inner alt-section-inner--reversed">
+    <div class="alt-section-text">
+      <div class="section-label">Mobile View</div>
+      <h2 class="alt-section-headline">Built for the rep on the move.</h2>
+      <p class="alt-section-body">
+        Your morning digest lands on your phone before you walk in. Know the signal, see the account context, and act — even when you're away from your desk. Same intelligence, portable when you need it.
+      </p>
+      <ul class="alt-bullet-list">
+        <li>
+          <span class="alt-bullet-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" stroke="#D4A843" stroke-width="1.5"/>
+              <path d="M5 8l2 2 4-4" stroke="#D4A843" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span><strong>"Why This Account"</strong> — one-liner context on every ranked entry so you know what to say</span>
+        </li>
+        <li>
+          <span class="alt-bullet-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" stroke="#D4A843" stroke-width="1.5"/>
+              <path d="M5 8l2 2 4-4" stroke="#D4A843" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span><strong>Signal Breakdown</strong> — drill into the specific funding event, hire, or CRM activity driving each rank</span>
+        </li>
+        <li>
+          <span class="alt-bullet-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" stroke="#D4A843" stroke-width="1.5"/>
+              <path d="M5 8l2 2 4-4" stroke="#D4A843" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span><strong>One-tap actions</strong> — mark accounts actioned, log calls, or schedule follow-ups right from the digest</span>
+        </li>
+      </ul>
+    </div>
+    <div class="alt-section-image">
+      <img
+        src="https://pub-629428d185ca4960a0a73c850d32294b.r2.dev/company_160798/images/561b30f0-5bc8-434d-a451-4be10cd7633e.jpg"
+        alt="SourcemAI mobile view — Signal Breakdown / Mark Actioned / Schedule Follow-up"
+        loading="lazy"
+      >
+    </div>
+  </div>
+</section>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Account context — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'settings' } }) %>
+  <main class="settings-main">
+    <h1><%= account.company_name || 'Account' %></h1>
+    <p class="muted"><a href="/settings/account-context">← Back to accounts</a></p>
+    <% if (typeof query !== 'undefined' && query && query.saved === '1') { %><div class="alert alert-success">Saved.</div><% } %>
+
+    <form method="POST" action="/settings/account/<%= account.id %>" class="settings-card">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <label>Company name
+        <input type="text" name="company_name" value="<%= account.company_name || '' %>">
+      </label>
+      <label>Domain
+        <input type="text" name="domain" value="<%= account.domain || '' %>">
+      </label>
+      <label>Industry
+        <input type="text" name="industry" value="<%= account.industry || '' %>">
+      </label>
+      <label>Employee count
+        <input type="number" name="employee_count" min="0" value="<%= account.employee_count != null ? account.employee_count : '' %>">
+      </label>
+      <label>Annual revenue (USD)
+        <input type="number" name="annual_revenue" min="0" step="1000" value="<%= account.annual_revenue != null ? account.annual_revenue : '' %>">
+      </label>
+      <label>CRM account ID
+        <input type="text" name="crm_account_id" value="<%= account.crm_account_id || '' %>">
+      </label>
+      <button type="submit" class="btn-primary">Save</button>
+    </form>
+  </main>
+</body>
+</html>

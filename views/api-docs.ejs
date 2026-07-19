@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — API Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'api-docs' } }) %>
+
+  <div class="dash-layout">
+    <div class="dash-header">
+      <h1>API Documentation</h1>
+      <% if (isAdmin) { %>
+        <a href="/settings/api-keys" class="btn btn-primary">Manage</a>
+      <% } %>
+    </div>
+
+    <p class="muted">Catalog of HTTP endpoints. All calls go to <code>https://sourcem.ai</code>. Auth header: <code>Authorization: Bearer $SMAI_TOKEN</code> where required.</p>
+
+    <% catalog.groups.forEach(function(group) { %>
+      <div class="card">
+        <div class="card-header"><h2><%= group.name %></h2></div>
+        <div class="card-body">
+          <% group.endpoints.forEach(function(ep) { %>
+            <details class="endpoint">
+              <summary>
+                <span class="method method-<%= ep.method %>"><%= ep.method %></span>
+                <%= ep.fullPath %>
+                <span class="auth-badge auth-<%= ep.auth %>"><%= ep.auth %></span>
+              </summary>
+              <div class="endpoint-body">
+                <div class="meta">Mount: <code><%= ep.mount %></code> · source: <code><%= ep.path %></code></div>
+
+                <div class="section-title">Request</div>
+                <% if (ep.request_schema) { %>
+                  <pre><code><%= JSON.stringify(ep.request_schema, null, 2) %></code></pre>
+                <% } else { %>
+                  <pre><code>(no body required)</code></pre>
+                <% } %>
+
+                <div class="section-title">Example curl</div>
+                <div style="display:flex; gap:8px; align-items:flex-start;">
+                  <pre style="flex:1;"><code class="curl-block"><%= ep.example_curl %></code></pre>
+                  <button class="btn copy-curl">Copy</button>
+                </div>
+
+                <div class="section-title">Example response</div>
+                <pre><code><%= ep.example_response %></code></pre>
+
+                <% if (isAdmin) { %>
+                  <div class="section-title">Test console</div>
+                  <div class="field">
+                    <label class="field-label">Bearer token</label>
+                    <input class="form-input test-token" type="password" placeholder="smai_...">
+                  </div>
+                  <% if (ep.request_schema) { %>
+                    <div class="field">
+                      <label class="field-label">Request body (JSON)</label>
+                      <textarea class="form-input test-body" rows="4"><%= JSON.stringify(ep.request_schema, null, 2) %></textarea>
+                    </div>
+                  <% } %>
+                  <button class="btn btn-primary test-run" data-fullpath="<%= ep.fullPath %>" data-method="<%= ep.method %>" style="margin-top:8px;">Run</button>
+                  <pre class="test-result" style="margin-top:8px; display:none;"><code></code></pre>
+                <% } %>
+              </div>
+            </details>
+          <% }); %>
+        </div>
+      </div>
+    <% }); %>
+
+    <% if (isAdmin) { %>
+      <div class="card">
+        <div class="card-header"><h2>API key management</h2></div>
+        <div class="card-body">
+          <p class="muted">Mint, copy, and revoke organization API tokens. Goes to <a href="/settings/api-keys">/settings/api-keys</a>.</p>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+<script>
+const CSRF = <%- JSON.stringify(typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '') %>;
+async function copyText(s, btn) {
+  try { await navigator.clipboard.writeText(s); btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+  catch (e) { btn.textContent = 'Copy failed'; }
+}
+document.querySelectorAll('.copy-curl').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pre = btn.parentElement.querySelector('.curl-block');
+    if (pre) copyText(pre.textContent, btn);
+  });
+});
+document.querySelectorAll('.test-run').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const details = btn.closest('.endpoint');
+    const tokenEl = details.querySelector('.test-token');
+    const bodyEl = details.querySelector('.test-body');
+    const resultEl = details.querySelector('.test-result');
+    const token = tokenEl && tokenEl.value;
+    if (!token) { alert('Paste an API token first.'); return; }
+    let body = null;
+    if (bodyEl && bodyEl.value.trim()) {
+      try { body = JSON.parse(bodyEl.value); } catch (e) { alert('Body must be valid JSON.'); return; }
+    }
+    btn.disabled = true; btn.textContent = 'Running…';
+    try {
+      const r = await fetch('/api-docs/test-console', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': CSRF || '' },
+        body: JSON.stringify({ method: btn.dataset.method, fullPath: btn.dataset.fullpath, token, body })
+      });
+      const data = await r.json();
+      resultEl.style.display = 'block';
+      resultEl.querySelector('code').textContent = JSON.stringify(data, null, 2);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Run';
+    }
+  });
+});
+</script>
+</body>
+</html>

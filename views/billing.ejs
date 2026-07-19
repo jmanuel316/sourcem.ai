@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Billing — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { current: 'settings' }) %>
+  <main class="settings-main">
+    <h1>Billing</h1>
+    <% if (sub && sub.status === 'past_due') { %>
+      <div class="alert alert-danger">
+        <strong>Payment failed.</strong> Update your payment method to keep access. New seat adds are blocked while past_due.
+      </div>
+    <% } %>
+
+    <section class="settings-card">
+      <h2>Subscription</h2>
+      <% if (sub) { %>
+        <table class="kv-table">
+          <tr><th>Plan</th><td><%= sub.plan %></td></tr>
+          <tr><th>Status</th><td><span class="badge"><%= sub.status %></span></td></tr>
+          <tr><th>Seats</th><td><%= sub.seat_count %></td></tr>
+          <% if (sub.current_period_end) { %>
+            <tr><th>Renews</th><td><%= new Date(sub.current_period_end).toLocaleDateString() %></td></tr>
+          <% } %>
+          <% if (sub.trial_ends_at) { %>
+            <tr><th>Trial ends</th><td><%= new Date(sub.trial_ends_at).toLocaleDateString() %></td></tr>
+          <% } %>
+        </table>
+        <div class="actions">
+          <button class="btn-secondary" onclick="openPortal()">Manage</button>
+        </div>
+      <% } else { %>
+        <p>No active subscription. <a href="/pricing">View plans</a></p>
+      <% } %>
+    </section>
+
+    <% if (sub && sub.stripe_customer_id) { %>
+    <section class="settings-card">
+      <h2>Add or update seats</h2>
+      <form id="seats-form" onsubmit="return updateSeats(event)">
+        <label>Seats (annual, $109/seat)
+          <input type="number" name="quantity" min="1" max="100" value="<%= sub ? sub.seat_count : 1 %>">
+        </label>
+        <button type="submit" class="btn-primary">Save</button>
+      </form>
+      <p id="seats-result" class="muted"></p>
+    </section>
+    <% } %>
+
+    <section class="settings-card">
+      <h2>Invoice history</h2>
+      <% if (invoices && invoices.length) { %>
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+          <% invoices.forEach(inv => { %>
+            <tr>
+              <td><%= new Date(inv.created * 1000).toLocaleDateString() %></td>
+              <td>$<%= (inv.amount_paid / 100).toFixed(2) %></td>
+              <td><span class="badge"><%= inv.status %></span></td>
+              <td><a href="<%= inv.invoice_pdf || inv.hosted_invoice_url || '#' %>" target="_blank" rel="noopener">View</a></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <%- include('partials/empty-state', { title: 'No invoices yet', body: 'Stripe-issued receipts will appear here once your subscription is active.', ctaText: 'View plans', ctaHref: '/pricing' }) %>
+      <% } %>
+    </section>
+  </main>
+  <script>
+    async function openPortal() {
+      try {
+        const res = await fetch('/api/billing/portal', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-csrf-token': window.__csrf || '' } });
+        if (!res.ok) throw new Error('failed');
+        const data = await res.json();
+        window.location.href = data.url;
+      } catch (err) {
+        document.getElementById('seats-result').textContent = 'Could not open portal — billing not configured.';
+      }
+    }
+    async function updateSeats(event) {
+      event.preventDefault();
+      const fd = new FormData(event.target);
+      const res = await fetch('/api/billing/update-seats', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-csrf-token': window.__csrf || '' }, body: JSON.stringify({ quantity: parseInt(fd.get('quantity'), 10) }) });
+      const data = await res.json();
+      const out = document.getElementById('seats-result');
+      if (res.ok) { out.textContent = `Updated to ${data.quantity} seat${data.quantity === 1 ? '' : 's'}.`; }
+      else if (data.error === 'subscription-past-due') { out.textContent = 'Update your payment method to add seats.'; }
+      else { out.textContent = `Update failed: ${data.error}`; }
+      return false;
+    }
+  </script>
+</body>
+</html>

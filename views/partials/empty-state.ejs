@@ -1,0 +1,14 @@
+<div class="empty-state">
+  <svg class="empty-state-illustration" viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="0" y="0" width="240" height="140" rx="12" fill="#fafafa"/>
+    <circle cx="120" cy="60" r="28" fill="none" stroke="#d4a047" stroke-width="2"/>
+    <path d="M104 60 a16 16 0 0 1 32 0" fill="none" stroke="#d4a047" stroke-width="2"/>
+    <rect x="60" y="100" width="120" height="6" rx="3" fill="#eee"/>
+    <rect x="80" y="112" width="80" height="6" rx="3" fill="#eee"/>
+  </svg>
+  <h2><%= title %></h2>
+  <% if (typeof body !== 'undefined' && body) { %><p><%= body %></p><% } %>
+  <% if (typeof ctaText !== 'undefined' && ctaText && typeof ctaHref !== 'undefined' && ctaHref) { %>
+    <a href="<%= ctaHref %>" class="btn-primary"><%= ctaText %></a>
+  <% } %>
+</div>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Sign up for SourcemAI — AI Sales Intelligence Layer with a ranked daily digest of high-priority accounts.">
+  <meta property="og:title" content="Sign up for SourcemAI">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://sourcem.ai/img/og.png">
+  <title>Sign up — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="auth-page">
+  <header class="auth-header">
+    <a href="/" class="brand">SourcemAI</a>
+  </header>
+  <main class="auth-card">
+    <h1>Create your account</h1>
+    <p class="lead">Start your 14-day Solidify trial — no card required.</p>
+    <% if (error) { %>
+      <div class="form-error"><%= error %></div>
+    <% } %>
+    <form method="POST" action="/signup" autocomplete="on">
+      <label>Email
+        <input type="email" name="email" required autocomplete="email" placeholder="you@company.com">
+      </label>
+      <label>Org name
+        <input type="text" name="org_name" required placeholder="Acme, Inc.">
+      </label>
+      <label>Password
+        <input type="password" name="password" required minlength="10" autocomplete="new-password" placeholder="At least 10 characters, with a letter and a digit">
+      </label>
+      <button type="submit" class="btn-primary">Create</button>
+    </form>
+    <p class="footer-links">Already have an account? <a href="/auth/login">Log in</a></p>
+    <p class="footer-links">By signing up you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+  </main>
+  <footer class="auth-footer">
+    <span>© 2026 SourcemAI · <a href="/status">Status</a> · <a href="/contact">Contact</a></span>
+  </footer>
+</body>
+</html>

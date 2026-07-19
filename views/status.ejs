@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>System status — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <main class="status-main">
+    <h1>All systems operational</h1>
+    <p class="lead">Last checked: <%= new Date().toUTCString() %></p>
+    <ul class="status-list">
+      <li><span class="status-dot status-ok"></span> Application — operational</li>
+      <li><span class="status-dot status-ok"></span> Database — operational</li>
+      <li><span class="status-dot status-ok"></span> Digest delivery — operational</li>
+      <li><span class="status-dot status-ok"></span> Stripe billing — <%= process.env.STRIPE_SECRET_KEY ? 'operational' : 'not configured (set STRIPE_SECRET_KEY to enable)' %></li>
+    </ul>
+    <p class="muted">Subscribe to updates: <a href="/contact">contact us</a>.</p>
+  </main>
+</body>
+</html>

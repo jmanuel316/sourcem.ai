@@ -1,0 +1,171 @@
+<%
+  const current = (nav && nav.current) || '';
+  const isAdmin = !!(locals.rep && locals.rep.role === 'admin');
+  const tagline = (nav && nav.tagline) || 'App';
+  const orgName = locals.rep && locals.rep.company_id
+    ? (locals.rep.org_name || locals.rep.name || 'Workspace')
+    : 'SourcemAI';
+  const repName = locals.rep ? (locals.rep.name || locals.rep.email || '') : '';
+  const initials = (() => {
+    if (!repName) return '·';
+    const parts = repName.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  })();
+  const hasUnread = (typeof unreadCount !== 'undefined' && unreadCount > 0);
+%>
+<nav class="nav app-nav">
+  <div class="nav-inner">
+    <button type="button" class="nav-hamburger" aria-label="Open menu" data-action="open-drawer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <a href="/" class="nav-logo" style="text-decoration:none;">SourcemAI</a>
+    <span class="nav-tagline"><%= tagline %></span>
+
+    <div class="nav-links">
+      <% if (!isAdmin) { %>
+        <a href="/digest" class="nav-link" <%= current === 'dashboard' || current === 'digest' ? 'aria-current="page"' : '' %>>Today</a>
+        <a href="/accounts" class="nav-link" <%= current === 'accounts' ? 'aria-current="page"' : '' %>>Accounts</a>
+        <a href="/sequences" class="nav-link" <%= current === 'sequences' ? 'aria-current="page"' : '' %>>Sequences</a>
+        <a href="/reports" class="nav-link" <%= current === 'reports' ? 'aria-current="page"' : '' %>>Reports</a>
+      <% } else { %>
+        <a href="/dashboard" class="nav-link" <%= current === 'admin-dashboard' ? 'aria-current="page"' : '' %>>Overview</a>
+        <a href="/accounts" class="nav-link" <%= current === 'accounts' ? 'aria-current="page"' : '' %>>Accounts</a>
+        <a href="/admin/pipeline" class="nav-link" <%= current === 'admin-pipeline' ? 'aria-current="page"' : '' %>>Pipeline</a>
+        <a href="/admin/audit" class="nav-link" <%= current === 'admin-audit' ? 'aria-current="page"' : '' %>>Audit</a>
+      <% } %>
+
+      <div class="app-user-menu" data-user-menu>
+        <button type="button" class="app-user-menu-avatar" aria-label="Open user menu" aria-expanded="false" data-action="toggle-menu">
+          <span aria-hidden="true"><%= initials %></span>
+        </button>
+        <div class="app-user-menu-list" role="menu">
+          <div class="app-user-menu-header">
+            <div class="org">Org · <%= orgName %></div>
+            <% if (repName) { %><div class="name"><%= repName %></div><% } %>
+          </div>
+          <% if (isAdmin) { %>
+            <a href="/dashboard" role="menuitem" <%= current === 'admin-dashboard' ? 'aria-current="page"' : '' %>>Overview</a>
+            <a href="/admin/pipeline" role="menuitem" <%= current === 'admin-pipeline' ? 'aria-current="page"' : '' %>>Pipeline</a>
+            <a href="/admin/audit" role="menuitem" <%= current === 'admin-audit' ? 'aria-current="page"' : '' %>>Audit</a>
+          <% } else { %>
+            <a href="/digest" role="menuitem" <%= current === 'digest' || current === 'dashboard' ? 'aria-current="page"' : '' %>>Today</a>
+            <a href="/accounts" role="menuitem" <%= current === 'accounts' ? 'aria-current="page"' : '' %>>Accounts</a>
+            <a href="/sequences" role="menuitem" <%= current === 'sequences' ? 'aria-current="page"' : '' %>>Sequences</a>
+          <% } %>
+          <a href="/settings" role="menuitem" <%= current === 'settings' ? 'aria-current="page"' : '' %>>Settings</a>
+          <a href="/settings/integrations" role="menuitem" <%= current === 'integrations' ? 'aria-current="page"' : '' %>>Integrations</a>
+          <a href="/import" role="menuitem" <%= current === 'import' ? 'aria-current="page"' : '' %>>Import</a>
+          <a href="/api/docs" role="menuitem" <%= current === 'api-docs' ? 'aria-current="page"' : '' %>>API docs</a>
+          <form method="POST" action="/auth/logout" role="none">
+            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+            <button type="submit" role="menuitem">Sign out</button>
+          </form>
+        </div>
+      </div>
+
+      <a href="/notifications" class="nav-link nav-link--bell nav-link--icon" <%= current === 'notifications' ? 'aria-current="page"' : '' %> title="Notifications">
+        <span class="nav-link--bell__icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+        </span>
+        <% if (hasUnread) { %><span class="bell-count" aria-label="<%= unreadCount %> unread"><%= unreadCount %></span><% } %>
+        <span class="sr-only">Notifications</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="app-nav-drawer" data-drawer aria-hidden="true">
+  <button type="button" class="nav-hamburger" aria-label="Close menu" data-action="close-drawer" style="position:absolute;top:1rem;right:1rem;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <div class="app-nav-drawer-panel">
+    <div class="app-user-menu-header">
+      <div class="org">Org · <%= orgName %></div>
+      <% if (repName) { %><div class="name"><%= repName %></div><% } %>
+    </div>
+    <% if (isAdmin) { %>
+      <a href="/dashboard" <%= current === 'admin-dashboard' ? 'aria-current="page"' : '' %>>Overview</a>
+      <a href="/accounts" <%= current === 'accounts' ? 'aria-current="page"' : '' %>>Accounts</a>
+      <a href="/admin/pipeline" <%= current === 'admin-pipeline' ? 'aria-current="page"' : '' %>>Pipeline</a>
+      <a href="/admin/audit" <%= current === 'admin-audit' ? 'aria-current="page"' : '' %>>Audit</a>
+    <% } else { %>
+      <a href="/digest" <%= current === 'digest' || current === 'dashboard' ? 'aria-current="page"' : '' %>>Today</a>
+      <a href="/accounts" <%= current === 'accounts' ? 'aria-current="page"' : '' %>>Accounts</a>
+      <a href="/sequences" <%= current === 'sequences' ? 'aria-current="page"' : '' %>>Sequences</a>
+      <a href="/reports" <%= current === 'reports' ? 'aria-current="page"' : '' %>>Reports</a>
+    <% } %>
+    <a href="/settings" <%= current === 'settings' ? 'aria-current="page"' : '' %>>Settings</a>
+    <a href="/settings/integrations" <%= current === 'integrations' ? 'aria-current="page"' : '' %>>Integrations</a>
+    <a href="/import" <%= current === 'import' ? 'aria-current="page"' : '' %>>Import</a>
+    <a href="/api/docs" <%= current === 'api-docs' ? 'aria-current="page"' : '' %>>API docs</a>
+    <a href="/notifications" <%= current === 'notifications' ? 'aria-current="page"' : '' %>>Notifications</a>
+    <form method="POST" action="/auth/logout">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <button type="submit" style="background:none;border:none;width:100%;text-align:left;padding:var(--space-sm) var(--space-md);color:var(--fg);cursor:pointer;font-family:inherit;font-size:0.95rem;">Sign out</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .app-nav .nav-inner { padding: 0; }
+</style>
+
+<script>
+(function() {
+  var drawer = document.querySelector('[data-drawer]');
+  document.querySelectorAll('[data-action="open-drawer"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (!drawer) return;
+      drawer.setAttribute('data-open', 'true');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+  document.querySelectorAll('[data-action="close-drawer"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (!drawer) return;
+      drawer.setAttribute('data-open', 'false');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    });
+  });
+  if (drawer) {
+    drawer.addEventListener('click', function(e) {
+      if (e.target === drawer) {
+        drawer.setAttribute('data-open', 'false');
+        drawer.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
+  var menu = document.querySelector('[data-user-menu]');
+  var menuBtn = menu && menu.querySelector('[data-action="toggle-menu"]');
+  if (menu && menuBtn) {
+    menuBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var open = menu.getAttribute('data-open') === 'true';
+      menu.setAttribute('data-open', open ? 'false' : 'true');
+      menuBtn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+    document.addEventListener('click', function(e) {
+      if (!menu.contains(e.target)) {
+        menu.setAttribute('data-open', 'false');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+})();
+</script>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Help — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <main class="help-main">
+    <h1>Help center</h1>
+    <p class="lead">Quick answers to common questions about SourcemAI.</p>
+    <div class="help-grid">
+      <% articles.forEach(a => { %>
+        <a class="help-card" href="/help/articles/<%= a.slug %>">
+          <h2><%= a.title %></h2>
+          <p><%= a.summary %></p>
+        </a>
+      <% }) %>
+    </div>
+  </main>
+</body>
+</html>

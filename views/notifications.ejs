@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Notifications — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { current: 'notifications' }) %>
+  <main class="notifications-main">
+    <header class="notifications-header">
+      <h1>Notifications</h1>
+      <form method="POST" action="/notifications/mark-all-read" style="display:inline">
+        <button type="submit" class="btn-secondary">Mark read</button>
+      </form>
+    </header>
+    <% if (items && items.length) { %>
+      <ul class="notification-list">
+        <% items.forEach(it => { %>
+          <li class="notification <%= it.read_at ? 'is-read' : 'is-unread' %>">
+            <% if (it.link) { %><a href="<%= it.link %>"><% } %>
+              <h3><%= it.title %></h3>
+              <% if (it.body) { %><p><%= it.body %></p><% } %>
+              <time><%= new Date(it.created_at).toLocaleString() %></time>
+            <% if (it.link) { %></a><% } %>
+          </li>
+        <% }) %>
+      </ul>
+    <% } else { %>
+      <%- include('partials/empty-state', { title: 'No notifications yet', body: 'Signal alerts, billing events, and team invites will appear here.', ctaText: 'Open digest', ctaHref: '/digest' }) %>
+    <% } %>
+  </main>
+</body>
+</html>

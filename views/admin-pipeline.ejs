@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — Pipeline Health</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'admin-pipeline', tagline: 'Pipeline Health' } }) %>
+
+  <div class="dash-layout dash-layout--pipeline">
+
+    <div class="dash-header">
+      <h1>Pipeline Health</h1>
+      <div id="headerMeta" style="font-size:0.8rem;color:var(--fg-dim);"></div>
+    </div>
+
+    <div id="alertBanner"></div>
+
+    <div>
+      <div class="section-title">Signal Ingestion Pipelines</div>
+      <div class="pipeline-grid" id="pipelineGrid">
+        <div class="loading">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const PIPELINE_META = {
+  funding:  { label: 'Funding (Crunchbase)', cron: '0 1 * * *',   schedule: 'Daily at 01:00 UTC' },
+  hiring:   { label: 'Hiring (Greenhouse / Lever)', cron: '30 1 * * *', schedule: 'Daily at 01:30 UTC' },
+  crm_sync: { label: 'CRM Sync (Salesforce / HubSpot)', cron: '0 2 * * *',   schedule: 'Daily at 02:00 UTC' },
+};
+
+function nextCronUTC(cronStr) {
+  // Parse "M H * * *" — assumes daily schedule only
+  const parts = cronStr.split(' ');
+  const minute = parseInt(parts[0], 10);
+  const hour   = parseInt(parts[1], 10);
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour, minute, 0));
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+function fmtTs(ts) {
+  if (!ts) return '<span style="color:var(--fg-dim)">Never</span>';
+  const d = new Date(ts);
+  return esc(d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }));
+}
+
+function buildBadge(row) {
+  if (!row.last_run)             return '<span class="badge badge-grey">never run</span>';
+  if (row.status === 'error')    return '<span class="badge badge-high">error</span>';
+  if (row.is_stale)              return '<span class="badge badge-medium">stale</span>';
+  return '<span class="badge badge-ok">ok</span>';
+}
+
+function buildCard(row) {
+  const meta = PIPELINE_META[row.pipeline] || { label: row.pipeline, cron: '', schedule: '' };
+  const next = meta.cron ? fmtTs(nextCronUTC(meta.cron)) : '—';
+  const inserted = row.rows_inserted != null ? `<strong>${row.rows_inserted}</strong>` : '—';
+  const skipped  = row.rows_skipped  != null ? `<strong>${row.rows_skipped}</strong>`  : '—';
+
+  const errorHtml = (row.status === 'error' && row.error_message)
+    ? `<div class="error-msg">${esc(row.error_message)}</div>`
+    : '';
+
+  return `
+    <div class="pipeline-card">
+      <div class="pipeline-card-left">
+        <div class="pipeline-name">${esc(meta.label)}</div>
+        <div class="pipeline-schedule">${esc(meta.schedule)}</div>
+        <div class="pipeline-meta">
+          <div class="meta-item">
+            <span class="meta-label">Last run</span>
+            <span class="meta-value">${fmtTs(row.last_run)}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Rows ingested</span>
+            <span class="meta-value">${inserted}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Rows skipped</span>
+            <span class="meta-value">${skipped}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Next scheduled</span>
+            <span class="meta-value">${next}</span>
+          </div>
+        </div>
+        ${errorHtml}
+      </div>
+      <div class="pipeline-badge-col">
+        ${buildBadge(row)}
+      </div>
+    </div>
+  `;
+}
+
+function summarizeAlert(row) {
+  if (row.status === 'error') {
+    const reason = row.error_message ? `: ${row.error_message}` : '';
+    return `${row.pipeline}: status=error${reason}`;
+  }
+  if (row.is_stale) {
+    return `${row.pipeline}: stale (>${row.expected_cadence_minutes != null ? (2 * row.expected_cadence_minutes) : 2880} min since last run)`;
+  }
+  return null;
+}
+
+function renderAlertBanner(pipelines) {
+  const banner = document.getElementById('alertBanner');
+  const flagged = pipelines
+    .filter(p => p.status === 'error' || p.is_stale)
+    .map(summarizeAlert)
+    .filter(Boolean);
+  if (flagged.length === 0) {
+    banner.innerHTML = '';
+    return;
+  }
+  banner.innerHTML = `
+    <div class="banner-alert">
+      ⚠ ${flagged.length} pipeline${flagged.length === 1 ? '' : 's'} need attention — see details below
+      <ul class="banner-alert-list">
+        ${flagged.map(s => `<li>${esc(s)}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+async function loadPipelineHealth() {
+  try {
+    const r = await fetch('/api/admin/pipeline-health');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const pipelines = d.pipelines || [];
+    if (!pipelines.length) {
+      document.getElementById('pipelineGrid').innerHTML = '<div style="color:var(--fg-dim);font-size:0.85rem;">No pipeline data found.</div>';
+      renderAlertBanner([]);
+      return;
+    }
+    renderAlertBanner(pipelines);
+    document.getElementById('pipelineGrid').innerHTML = pipelines.map(buildCard).join('');
+    document.getElementById('headerMeta').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    document.getElementById('pipelineGrid').innerHTML = `<div class="error-msg">Failed to load pipeline health: ${esc(e.message)}</div>`;
+  }
+}
+
+loadPipelineHealth();
+</script>
+</body>
+</html>

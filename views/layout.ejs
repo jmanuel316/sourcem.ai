@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — AI Sales Intelligence Layer</title>
+  <meta name="description" content="SourcemAI monitors funding events, GTM hiring signals, and CRM activity — then delivers a ranked daily digest of high-priority accounts to your sales team via mobile PWA.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="icon" href="https://pub-629428d185ca4960a0a73c850d32294b.r2.dev/company_160798/images/6ac4f552-fd8a-4c97-a90d-230e373fff98.png">
+  <link rel="apple-touch-icon" href="https://pub-629428d185ca4960a0a73c850d32294b.r2.dev/company_160798/images/6ac4f552-fd8a-4c97-a90d-230e373fff98.png">
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+  <%- include('partials/nav') %>
+  <%- include('partials/hero', { abVariant }) %>
+  <%- include('partials/how-it-works') %>
+  <%- include('partials/email-preview') %>
+  <%- include('partials/about') %>
+  <%- include('partials/outcomes') %>
+  <%- include('partials/pricing') %>
+  <%- include('partials/comparison') %>
+  <%- include('partials/closing') %>
+  <%- include('partials/footer') %>
+  <!-- Polsia Analytics — only fires after cookie consent. -->
+  <script>
+    (function(){
+      var slug = "<%= process.env.SOURCEMAI_ANALYTICS_SLUG || 'sourcemai' %>";
+      var consent = (typeof localStorage !== 'undefined') && localStorage.getItem('cookie_consent') === 'accepted';
+      if (!slug || !consent) return;
+      var vid = localStorage.getItem('polsia_vid');
+      if (!vid) {
+        vid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0;
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        localStorage.setItem('polsia_vid', vid);
+      }
+      new Image().src = 'https://polsia.com/api/beacon/pixel?s=' + encodeURIComponent(slug) + '&v=' + encodeURIComponent(vid);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Audit log — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { current: 'admin-audit' }) %>
+  <main class="settings-main">
+    <h1>Audit log</h1>
+    <p class="muted">Every admin action — invites, role changes, billing events, integration connects.</p>
+    <% if (items && items.length) { %>
+      <table class="data-table">
+        <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Metadata</th></tr></thead>
+        <tbody>
+        <% items.forEach(it => { %>
+          <tr>
+            <td><%= new Date(it.created_at).toLocaleString() %></td>
+            <td><%= it.actor_name || (it.actor_email || '—') %></td>
+            <td><code><%= it.action %></code></td>
+            <td><%= it.target_type ? it.target_type + ':' : '' %><%= it.target_id || '' %></td>
+            <td><pre class="meta"><%= it.metadata ? JSON.stringify(it.metadata) : '' %></pre></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <%- include('partials/empty-state', { title: 'No audit events yet', body: 'Admin actions — invites, role changes, billing, integration connects — will appear here.', ctaText: 'Open settings', ctaHref: '/settings' }) %>
+    <% } %>
+  </main>
+</body>
+</html>

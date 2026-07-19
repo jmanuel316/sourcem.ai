@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — Integrations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'integrations', tagline: 'Autonomous outbound engine' } }) %>
+
+  <div class="dash-layout">
+
+    <div class="dash-header">
+      <h1>Integrations</h1>
+    </div>
+
+    <div id="flashMsg"></div>
+
+    <%
+      const PROVIDER_LABELS = {};
+      Object.values(categories).forEach(function(group) {
+        group.forEach(function(p) { PROVIDER_LABELS[p.provider] = p.label; });
+      });
+      infoCards.forEach(function(p) { PROVIDER_LABELS[p.provider] = p.label; });
+      const sections = [
+        { key: 'crm',      title: 'CRM' },
+        { key: 'hiring',   title: 'Hiring signals' },
+        { key: 'email',    title: 'Email engagement' },
+        { key: 'outbound', title: 'Outbound' },
+        { key: 'imports',  title: 'Imports' }
+      ];
+    %>
+
+    <% sections.forEach(function(section) { %>
+      <div class="category-section">
+        <h2 class="cat-title"><%= section.title %></h2>
+        <div class="providers-grid">
+        <% (categories[section.key] || []).forEach(function(p) { %>
+          <div class="card" id="card-<%= p.provider %>" data-provider="<%= p.provider %>" data-has-oauth="<%= Boolean(p.oauth) %>">
+            <div class="card-header">
+              <h2><%= p.label %></h2>
+              <span class="badge badge-draft" data-role="badge">Not connected</span>
+            </div>
+            <div class="card-body">
+              <div class="integration-logo"><%= p.label %></div>
+              <div class="integration-desc"><%= p.desc %></div>
+              <div class="integration-meta" data-role="meta"></div>
+              <div class="integration-actions" data-role="actions">
+                <div style="font-size:0.8rem;color:var(--fg-dim);">Loading…</div>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+        </div>
+      </div>
+    <% }); %>
+
+    <% if (infoCards && infoCards.length) { %>
+      <div class="category-section">
+        <h2 class="cat-title">Other</h2>
+        <div class="providers-grid">
+          <% infoCards.forEach(function(p) { %>
+            <div class="card" id="card-<%= p.provider %>">
+              <div class="card-header">
+                <h2><%= p.label %></h2>
+                <span class="badge badge-draft">Manual</span>
+              </div>
+              <div class="card-body">
+                <div class="integration-logo"><%= p.label %></div>
+                <div class="integration-desc"><%= p.desc %></div>
+                <div class="integration-actions">
+                  <a class="btn btn-secondary btn-sm" href="<%= p.docsPath || '/help' %>">View docs</a>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+  </div>
+
+<script>
+const CSRF_TOKEN = <%- JSON.stringify(typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '') %>;
+const PROVIDER_LABELS = <%- JSON.stringify(PROVIDER_LABELS) %>;
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString();
+}
+
+function renderCard(provider, info) {
+  const root = document.getElementById('card-' + provider);
+  if (!root) return;
+  const badge    = root.querySelector('[data-role="badge"]');
+  const meta     = root.querySelector('[data-role="meta"]');
+  const actions  = root.querySelector('[data-role="actions"]');
+  if (!info) return;
+
+  if (info.status === 'connected') {
+    badge.className = 'badge badge-active';
+    badge.textContent = 'Connected';
+    meta.textContent = info.last_synced_at ? 'Last synced ' + fmtDate(info.last_synced_at) : 'Connected';
+    actions.innerHTML = `
+      <button class="btn btn-danger btn-sm" onclick="disconnect('${provider}')">Disconnect</button>
+      <a class="btn btn-secondary btn-sm" href="/help/articles/integrations">Configure</a>
+    `;
+  } else if (info.status === 'error' || info.status === 'reauth_needed') {
+    badge.className = 'badge badge-error';
+    badge.textContent = info.status === 'reauth_needed' ? 'Reconnect' : 'Error';
+    meta.textContent = info.last_error || '';
+    actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="connect('${provider}')">Reconnect</button>`;
+  } else {
+    badge.className = 'badge badge-draft';
+    badge.textContent = 'Not connected';
+    meta.textContent = '';
+    const hasOauth = root.getAttribute('data-has-oauth') === 'true';
+    const label = hasOauth ? 'Connect' : 'Configure';
+    actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="connect('${provider}')">${label}</button>`;
+  }
+}
+
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/integrations/status');
+    const data = await r.json();
+    Object.keys(PROVIDER_LABELS).forEach(function(provider) {
+      const root = document.getElementById('card-' + provider);
+      if (!root || !root.querySelector('[data-role="badge"]')) return;
+      renderCard(provider, data[provider] || null);
+    });
+  } catch (e) {
+    const flash = document.getElementById('flashMsg');
+    if (flash) flash.innerHTML = '<div class="error-msg">Failed to load integrations status</div>';
+  }
+}
+
+function connect(provider) {
+  window.location.href = '/api/integrations/connect/' + provider;
+}
+
+async function disconnect(provider) {
+  const root = document.getElementById('card-' + provider);
+  const btn = root && root.querySelector('[data-role="actions"] button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Disconnecting…'; }
+  try {
+    const r = await fetch('/api/integrations/disconnect/' + provider, {
+      method: 'DELETE',
+      headers: CSRF_TOKEN ? { 'x-csrf-token': CSRF_TOKEN } : {}
+    });
+    if (!r.ok) {
+      const d = await r.json();
+      throw new Error(d.error || 'Disconnect failed');
+    }
+    await loadStatus();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Disconnect'; }
+    const flash = document.getElementById('flashMsg');
+    flash.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+    setTimeout(() => { flash.innerHTML = ''; }, 5000);
+  }
+}
+
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const connected = params.get('connected');
+  const disconnected = params.get('disconnected');
+  const error = params.get('error');
+  const msg = params.get('msg');
+  const flash = document.getElementById('flashMsg');
+  if (connected) {
+    const label = PROVIDER_LABELS[connected] || connected;
+    flash.innerHTML = `<div class="success-msg">${esc(label)} connected successfully.</div>`;
+  } else if (disconnected) {
+    const label = PROVIDER_LABELS[disconnected] || disconnected;
+    flash.innerHTML = `<div class="success-msg">${esc(label)} disconnected.</div>`;
+  } else if (error) {
+    const label = PROVIDER_LABELS[error] || error;
+    flash.innerHTML = `<div class="error-msg">Failed to connect ${esc(label)}: ${esc(msg || 'unknown error')}</div>`;
+  }
+  if (connected || disconnected || error) {
+    setTimeout(() => { flash.innerHTML = ''; }, 6000);
+    history.replaceState({}, '', '/settings/integrations');
+  }
+})();
+
+loadStatus();
+</script>
+</body>
+</html>

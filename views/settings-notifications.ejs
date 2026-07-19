@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Notification preferences — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { current: 'settings' }) %>
+  <main class="settings-main">
+    <h1>Notification preferences</h1>
+    <% if (typeof query !== 'undefined' && query && query.saved === '1') { %><div class="alert alert-success">Saved.</div><% } %>
+    <form method="POST" action="/settings/notifications" class="settings-card">
+      <label>Digest time-of-day
+        <input type="time" name="digest_time" value="<%= prefs.digest_time || '08:00' %>">
+      </label>
+      <label>Signal-change threshold (score)
+        <input type="number" name="signal_threshold" min="1" max="50" value="<%= prefs.signal_threshold || 5 %>">
+      </label>
+      <fieldset>
+        <legend>Channels</legend>
+        <label class="checkbox"><input type="checkbox" name="channels" value="email" <%=(prefs.channels||[]).includes('email')?'checked':''%>> Email</label>
+        <label class="checkbox"><input type="checkbox" name="channels" value="push" <%=(prefs.channels||[]).includes('push')?'checked':''%>> Push</label>
+      </fieldset>
+      <button type="submit" class="btn-primary">Save</button>
+    </form>
+  </main>
+</body>
+</html>

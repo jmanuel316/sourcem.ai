@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Organization — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'settings' } }) %>
+  <main class="settings-main">
+    <h1>Organization</h1>
+    <% if (typeof query !== 'undefined' && query && query.saved === '1') { %><div class="alert alert-success">Saved.</div><% } %>
+    <form method="POST" action="/settings/org" class="settings-card">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <label>Workspace name
+        <input type="text" name="name" required value="<%= org && org.name ? org.name : '' %>">
+      </label>
+      <label>Billing email
+        <input type="email" name="billing_email" value="<%= org && org.billing_email ? org.billing_email : '' %>">
+      </label>
+      <button type="submit" class="btn-primary">Save</button>
+    </form>
+  </main>
+</body>
+</html>

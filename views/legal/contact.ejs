@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contact — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="legal-page">
+  <header class="legal-header"><a href="/" class="brand">SourcemAI</a></header>
+  <main class="legal-main">
+    <h1>Contact</h1>
+    <p>Questions or feedback? Send a message and we'll respond within one business day.</p>
+    <% if (error) { %><div class="form-error"><%= error %></div><% } %>
+    <% if (success) { %><div class="alert alert-success">Thanks — we'll be in touch.</div><% } %>
+    <form method="POST" action="/contact">
+      <label>Your name <input type="text" name="name"></label>
+      <label>Email <input type="email" name="email" required></label>
+      <label>Message <textarea name="message" rows="6" required></textarea></label>
+      <button type="submit" class="btn-primary">Send</button>
+    </form>
+  </main>
+</body>
+</html>

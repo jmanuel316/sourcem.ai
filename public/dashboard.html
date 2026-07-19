@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Outbound Metrics</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .grid {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 32px 48px;
+      text-align: center;
+      min-width: 180px;
+    }
+    .metric-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #f8fafc;
+      line-height: 1;
+    }
+    .metric-value.rate {
+      font-size: 2.5rem;
+      color: #38bdf8;
+    }
+    .unit {
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: #64748b;
+      margin-left: 2px;
+    }
+    .updated {
+      font-size: 0.75rem;
+      color: #475569;
+      margin-top: 24px;
+    }
+    .loading { color: #475569; font-size: 1rem; }
+    .error { color: #f87171; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <h1>Outbound Metrics</h1>
+  <div class="grid">
+    <div class="card">
+      <div class="metric-label">Emails Sent</div>
+      <div class="metric-value" id="emails-sent">—</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Replies Received</div>
+      <div class="metric-value" id="replies-received">—</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Reply Rate</div>
+      <div class="metric-value rate" id="reply-rate">—<span class="unit">%</span></div>
+    </div>
+  </div>
+  <div class="updated" id="updated"></div>
+
+  <script>
+    async function loadMetrics() {
+      try {
+        const res = await fetch('/api/metrics');
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        document.getElementById('emails-sent').textContent = data.emailsSent.toLocaleString();
+        document.getElementById('replies-received').textContent = data.repliesReceived.toLocaleString();
+        document.getElementById('reply-rate').innerHTML =
+          data.replyRate.toFixed(1) + '<span class="unit">%</span>';
+        document.getElementById('updated').textContent =
+          'Updated ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        document.getElementById('emails-sent').textContent = '—';
+        document.getElementById('replies-received').textContent = '—';
+        document.getElementById('reply-rate').innerHTML = '—<span class="unit">%</span>';
+        document.getElementById('updated').textContent = 'Failed to load metrics';
+      }
+    }
+
+    loadMetrics();
+    setInterval(loadMetrics, 30 * 1000);
+  </script>
+</body>
+</html>

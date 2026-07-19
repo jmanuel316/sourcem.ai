@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Team — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'settings' } }) %>
+  <main class="settings-main">
+    <h1>Team</h1>
+    <% if (typeof query !== 'undefined' && query && query.invited === '1') { %><div class="alert alert-success">Invite sent.</div><% } %>
+
+    <form method="POST" action="/settings/team/invite" class="settings-card">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <label>Name
+        <input type="text" name="name" required>
+      </label>
+      <label>Email
+        <input type="email" name="email" required>
+      </label>
+      <button type="submit" class="btn-primary">Invite rep</button>
+    </form>
+
+    <% if (team && team.length) { %>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Accounts</th><th>Last active</th><th></th></tr></thead>
+        <tbody>
+        <% team.forEach(m => { %>
+          <tr>
+            <td><%= m.name %></td>
+            <td><%= m.email %></td>
+            <td><%= m.role || 'rep' %></td>
+            <td><%= m.is_active === false ? 'deactivated' : 'active' %></td>
+            <td><%= m.accounts_assigned != null ? m.accounts_assigned : '—' %></td>
+            <td><%= m.last_active ? new Date(m.last_active).toLocaleString() : '—' %></td>
+            <td>
+              <% if (m.is_active !== false && locals.rep && m.id !== locals.rep.id) { %>
+                <form method="POST" action="/settings/team/<%= m.id %>/deactivate" style="display:inline">
+                  <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+                  <button type="submit" class="btn-link">Deactivate</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <%- include('partials/empty-state', { title: 'No team members yet', body: 'Invite your first rep to start collaborating on the digest.', ctaText: null }) %>
+    <% } %>
+  </main>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'dashboard', tagline: 'Autonomous outbound engine' } }) %>
+
+  <div class="dash-layout">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <h1>Dashboard</h1>
+      <div class="trigger-actions">
+        <button class="btn btn-primary btn-sm" id="triggerSend" onclick="triggerSend()">Run now</button>
+        <button class="btn btn-secondary btn-sm" id="seedBtn" onclick="seedData()">Seed demo</button>
+      </div>
+    </div>
+
+    <div id="msg"></div>
+
+    <!-- Stats row -->
+    <div class="stats-grid" id="stats">
+      <div class="loading">Loading stats…</div>
+    </div>
+
+    <!-- Setup banner (shows if no email account) -->
+    <div class="setup-banner" id="setupBanner" style="display:none;">
+      <div>
+        <strong>Setup required</strong>
+        <p>Connect an email account and add prospects to start sending.</p>
+      </div>
+      <a href="#" class="btn btn-primary btn-sm" onclick="seedData();return false;">Seed Demo Data</a>
+    </div>
+
+    <!-- Main grid: campaigns + prospects -->
+    <div class="two-col">
+      <!-- Campaigns -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Campaigns</h2>
+          <button class="btn btn-primary btn-sm" onclick="showNewCampaign()">+ New Campaign</button>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="data-table" id="campaignsTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Daily Limit</th>
+                <th>Sent Today</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="campaignsBody">
+              <tr><td colspan="5" class="loading">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Prospects summary -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Prospects</h2>
+          <button class="btn btn-primary btn-sm" onclick="showDiscover()">+ Discover</button>
+        </div>
+        <div class="card-body">
+          <div id="prospectStats" class="loading">Loading…</div>
+          <div id="prospectList" style="margin-top:var(--space-lg);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Replies + Outbound log -->
+    <div class="two-col">
+      <!-- Recent replies -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Replies</h2>
+        </div>
+        <div class="card-body">
+          <div id="repliesList" class="feed-list">
+            <div class="loading">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent sent emails -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Emails</h2>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="data-table" id="emailsTable">
+            <thead>
+              <tr>
+                <th>To</th>
+                <th>Subject</th>
+                <th>Sent</th>
+              </tr>
+            </thead>
+            <tbody id="emailsBody">
+              <tr><td colspan="3" class="loading">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- New Campaign Modal -->
+  <div id="campaignModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;">
+    <div class="card" style="width:500px;max-width:90vw;">
+      <div class="card-header">
+        <h2>New Campaign</h2>
+        <button class="btn btn-secondary btn-sm" onclick="hideModal('campaignModal')">✕</button>
+      </div>
+      <div class="card-body">
+        <div class="form-group" style="margin-bottom:var(--space-md);">
+          <label class="form-label">Campaign Name</label>
+          <input class="form-input" id="campName" placeholder="e.g. Q3 SaaS Outreach">
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-md);">
+          <label class="form-label">ICP Description</label>
+          <textarea class="form-textarea" id="campIcp" placeholder="e.g. B2B SaaS companies, 50-500 employees, Series A-B, VP Sales or Head of Growth"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-lg);">
+          <label class="form-label">Daily Send Limit</label>
+          <input class="form-input" id="campLimit" type="number" value="30" min="1" max="200">
+        </div>
+        <button class="btn btn-primary" onclick="createCampaign()">Create</button>
+        <div id="campError" class="error-msg" style="display:none;margin-top:var(--space-sm);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discover Modal -->
+  <div id="discoverModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;">
+    <div class="card" style="width:500px;max-width:90vw;">
+      <div class="card-header">
+        <h2>AI Prospect Discovery</h2>
+        <button class="btn btn-secondary btn-sm" onclick="hideModal('discoverModal')">✕</button>
+      </div>
+      <div class="card-body">
+        <div class="form-group" style="margin-bottom:var(--space-md);">
+          <label class="form-label">ICP Description</label>
+          <textarea class="form-textarea" id="discIcp" placeholder="e.g. B2B SaaS companies, 50-500 employees, Series A-B, VP Sales or Head of Growth"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-lg);">
+          <label class="form-label">Max to discover</label>
+          <input class="form-input" id="discLimit" type="number" value="20" min="1" max="50">
+        </div>
+        <button class="btn btn-primary" onclick="discoverProspects()">Import</button>
+        <div id="discStatus" style="margin-top:var(--space-sm);font-size:0.8rem;color:var(--fg-muted);"></div>
+        <div id="discError" class="error-msg" style="display:none;margin-top:var(--space-sm);"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API = '';
+let campaignCache = [];
+
+function msg(text, type='success') {
+  const el = document.getElementById('msg');
+  el.innerHTML = `<div class="${type}-msg">${text}</div>`;
+  setTimeout(() => el.innerHTML = '', 5000);
+}
+
+function showNewCampaign() { document.getElementById('campaignModal').style.display = 'flex'; }
+function showDiscover() { document.getElementById('discoverModal').style.display = 'flex'; }
+function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+async function triggerSend() {
+  const btn = document.getElementById('triggerSend');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch(API + '/api/outbound/trigger', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ max_per_campaign: 30 }) });
+    const data = await r.json();
+    const total = data.results ? data.results.reduce((s, r) => s + (r.sent || 0), 0) : 0;
+    msg(`Sent ${total} emails across ${(data.results || []).length} campaigns.`);
+    loadAll();
+  } catch(e) { msg('Send failed: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Run now'; }
+}
+
+async function seedData() {
+  const btn = document.getElementById('seedBtn');
+  btn.disabled = true; btn.textContent = 'Seeding…';
+  try {
+    const r = await fetch(API + '/api/seed', { method: 'POST' });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    msg(`Seeded: ${data.email_account ? '1 email account' : ''} ${data.campaign ? '1 campaign' : ''} ${data.prospects} prospects.`);
+    loadAll();
+  } catch(e) { msg('Seed failed: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Seed demo'; }
+}
+
+async function createCampaign() {
+  const name = document.getElementById('campName').value.trim();
+  const icp_description = document.getElementById('campIcp').value.trim();
+  const daily_limit = parseInt(document.getElementById('campLimit').value) || 30;
+  if (!name || !icp_description) { document.getElementById('campError').textContent = 'Name and ICP required.'; document.getElementById('campError').style.display = 'block'; return; }
+  try {
+    const r = await fetch(API + '/api/campaigns', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, icp_description, daily_limit }) });
+    if (!r.ok) throw new Error(await r.text());
+    hideModal('campaignModal');
+    msg('Campaign created.');
+    loadCampaigns();
+  } catch(e) { document.getElementById('campError').textContent = e.message; document.getElementById('campError').style.display = 'block'; }
+}
+
+async function discoverProspects() {
+  const icp_description = document.getElementById('discIcp').value.trim();
+  const limit = parseInt(document.getElementById('discLimit').value) || 20;
+  if (!icp_description) { document.getElementById('discError').textContent = 'ICP description required.'; document.getElementById('discError').style.display = 'block'; return; }
+  const status = document.getElementById('discStatus');
+  status.textContent = 'Researching prospects…';
+  try {
+    const r = await fetch(API + '/api/prospects/discover', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ icp_description, limit }) });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    status.textContent = `Found and saved ${data.discovered} prospects.`;
+    setTimeout(() => { hideModal('discoverModal'); status.textContent = ''; loadAll(); }, 2000);
+  } catch(e) { document.getElementById('discError').textContent = e.message; document.getElementById('discError').style.display = 'block'; }
+}
+
+async function toggleCampaign(id, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'draft' : 'active';
+  await fetch(API + `/api/campaigns/${id}/status`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status: newStatus }) });
+  loadCampaigns();
+  loadStats();
+}
+
+async function loadStats() {
+  try {
+    const [campRes, acctRes] = await Promise.all([
+      fetch(API + '/api/campaigns'),
+      fetch(API + '/api/email-accounts'),
+    ]);
+    const campaigns = (await campRes.json()).campaigns || [];
+    const accounts = (await acctRes.json()).email_accounts || [];
+
+    const active = campaigns.filter(c => c.status === 'active');
+    const totalProspects = await fetch(API + '/api/prospects?limit=1').then(r => r.headers.get('X-Total-Count') || '?');
+
+    // Sent today totals
+    let sentToday = 0;
+    await Promise.all(active.map(async c => {
+      const r = await fetch(API + `/api/campaigns/${c.id}/sent-today`);
+      const d = await r.json();
+      sentToday += d.sent_today || 0;
+    }));
+
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card"><div class="label">Active Campaigns</div><div class="value">${active.length}</div><div class="sub">of ${campaigns.length} total</div></div>
+      <div class="stat-card"><div class="label">Sent Today</div><div class="value">${sentToday}</div><div class="sub">across all campaigns</div></div>
+      <div class="stat-card"><div class="label">Email Accounts</div><div class="value">${accounts.length}</div><div class="sub">${accounts.filter(a => a.is_primary).length ? '1 primary' : 'no primary set'}</div></div>
+      <div class="stat-card"><div class="label">Replies</div><div class="value">—</div><div class="sub">check webhook logs</div></div>
+    `;
+
+    document.getElementById('setupBanner').style.display = (!accounts.length) ? 'flex' : 'none';
+  } catch(e) {
+    document.getElementById('stats').innerHTML = '<div class="error-msg">Failed to load stats</div>';
+  }
+}
+
+async function loadCampaigns() {
+  try {
+    const r = await fetch(API + '/api/campaigns');
+    const data = await r.json();
+    campaignCache = data.campaigns || [];
+    const active = campaignCache.filter(c => c.status === 'active');
+
+    const rows = await Promise.all(campaignCache.map(async c => {
+      let sentToday = 0;
+      try {
+        const sr = await fetch(API + `/api/campaigns/${c.id}/sent-today`);
+        const sd = await sr.json();
+        sentToday = sd.sent_today || 0;
+      } catch {}
+      return `<tr>
+        <td style="font-weight:600;color:var(--fg)">${esc(c.name)}</td>
+        <td><span class="badge ${c.status === 'active' ? 'badge-active' : 'badge-draft'}">${c.status}</span></td>
+        <td>${c.daily_limit}</td>
+        <td>${sentToday}</td>
+        <td><button class="btn btn-sm ${c.status === 'active' ? 'btn-secondary' : 'btn-primary'}" onclick="toggleCampaign(${c.id},'${c.status}')">${c.status === 'active' ? 'Pause' : 'Activate'}</button></td>
+      </tr>`;
+    }));
+    document.getElementById('campaignsBody').innerHTML = rows.length ? rows.join('') : '<tr class="row-empty"><td colspan="5">No campaigns yet — create one above.</td></tr>';
+  } catch(e) {
+    document.getElementById('campaignsBody').innerHTML = `<tr><td colspan="5" class="error-msg">Failed to load campaigns</td></tr>`;
+  }
+}
+
+async function loadProspects() {
+  try {
+    const [unc, sent] = await Promise.all([
+      fetch(API + '/api/prospects?status=uncontacted&limit=10'),
+      fetch(API + '/api/prospects?status=emails_sent&limit=5'),
+    ]);
+    const uncontacted = (await unc.json()).prospects || [];
+    const emailed = (await sent.json()).prospects || [];
+
+    document.getElementById('prospectStats').innerHTML = `<div class="stats-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="stat-card" style="padding:var(--space-md);"><div class="label">Uncontacted</div><div class="value" style="font-size:1.5rem;">${uncontacted.length}</div></div>
+      <div class="stat-card" style="padding:var(--space-md);"><div class="label">Emails Sent</div><div class="value" style="font-size:1.5rem;">${emailed.length}</div></div>
+    </div>`;
+
+    const listHtml = uncontacted.slice(0, 5).map(p => `
+      <div class="feed-item">
+        <div class="feed-item-top">
+          <span class="feed-name">${esc(p.name)}</span>
+          <span class="badge badge-uncontacted">uncontacted</span>
+        </div>
+        <div class="feed-meta">${esc(p.company || '')} — ${esc(p.email)}</div>
+      </div>`).join('');
+    document.getElementById('prospectList').innerHTML = listHtml || '<div style="font-size:0.8rem;color:var(--fg-dim);padding:var(--space-md);text-align:center;">No prospects yet</div>';
+  } catch(e) {
+    document.getElementById('prospectStats').innerHTML = '<div class="error-msg">Failed to load prospects</div>';
+  }
+}
+
+async function loadReplies() {
+  try {
+    const r = await fetch(API + '/api/outbound/replies?limit=10');
+    const data = await r.json();
+    const replies = data.replies || [];
+    if (!replies.length) {
+      document.getElementById('repliesList').innerHTML = '<div style="font-size:0.8rem;color:var(--fg-dim);padding:var(--space-md);text-align:center;">No replies yet — make sure webhook is connected</div>';
+      return;
+    }
+    const html = replies.map(r => `
+      <div class="feed-item">
+        <div class="feed-item-top">
+          <span class="feed-name">${esc(r.prospect_name || 'Unknown')}</span>
+          <span class="badge badge-${r.category === 'interest' ? 'interest' : r.category === 'meeting_booked' ? 'meeting' : r.category === 'objection' ? 'objection' : 'draft'}">${r.category}</span>
+        </div>
+        <div class="feed-meta">${esc(r.ai_categorization || '')}</div>
+        <div class="feed-meta" style="color:var(--fg-dim);">${new Date(r.created_at).toLocaleDateString()}</div>
+      </div>`).join('');
+    document.getElementById('repliesList').innerHTML = html;
+  } catch(e) {
+    document.getElementById('repliesList').innerHTML = '<div class="error-msg">Failed to load replies</div>';
+  }
+}
+
+async function loadSentEmails() {
+  try {
+    const r = await fetch(API + '/api/outbound/emails?limit=20');
+    const data = await r.json();
+    const emails = data.emails || [];
+    const rows = emails.map(e => `<tr>
+      <td style="font-weight:600;color:var(--fg)">${esc(e.prospect_name || e.email || '?')}</td>
+      <td>${esc(e.subject || '')}</td>
+      <td style="color:var(--fg-dim);font-size:0.75rem;">${new Date(e.sent_at).toLocaleDateString()}</td>
+    </tr>`);
+    document.getElementById('emailsBody').innerHTML = rows.length ? rows.join('') : '<tr class="row-empty"><td colspan="3">No emails sent yet.</td></tr>';
+  } catch(e) {
+    document.getElementById('emailsBody').innerHTML = `<tr><td colspan="3" class="error-msg">Failed to load emails</td></tr>`;
+  }
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function loadAll() { loadStats(); loadCampaigns(); loadProspects(); loadReplies(); loadSentEmails(); }
+
+loadAll();
+</script>
+</body>
+</html>

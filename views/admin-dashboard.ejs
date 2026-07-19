@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — GTM Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'admin-dashboard', tagline: 'Admin' } }) %>
+
+  <div class="dash-layout">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <div>
+        <span class="section-label" style="display:block;margin-bottom:var(--space-xs);">Admin</span>
+        <h1>Dashboard</h1>
+      </div>
+      <div id="headerMeta" style="font-size:0.8rem;color:var(--fg-dim);"></div>
+    </div>
+
+    <!-- Overview metrics -->
+    <div>
+      <div class="section-title">Today's Overview</div>
+      <div class="stats-grid" id="overviewStats">
+        <div class="loading">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Team activity table -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Team Activity</h2>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <table class="data-table" id="teamTable">
+          <thead>
+            <tr>
+              <th>Rep Name</th>
+              <th>Accounts Assigned</th>
+              <th>Actioned Today</th>
+              <th>Scheduled Today</th>
+              <th>Last Active</th>
+            </tr>
+          </thead>
+          <tbody id="teamBody">
+            <tr><td colspan="5" class="loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top accounts + Signal breakdown -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-xl);">
+      <!-- Top accounts panel -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Top Accounts Today</h2>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="data-table" id="topAccountsTable">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Rep</th>
+                <th>Signals</th>
+                <th>Score</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="topAccountsBody">
+              <tr><td colspan="5" class="loading">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Signal breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Signals (7 days)</h2>
+        </div>
+        <div class="card-body">
+          <div class="stats-grid" id="signalBreakdown" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="loading">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+async function loadOverview() {
+  try {
+    const r = await fetch('/api/admin/overview');
+    if (!r.ok) throw new Error('fetch failed');
+    const d = await r.json();
+    document.getElementById('overviewStats').innerHTML = `
+      <div class="stat-card"><div class="label">Total Scored</div><div class="value">${d.total_scored || 0}</div><div class="sub">accounts today</div></div>
+      <div class="stat-card"><div class="label">High Priority</div><div class="value">${d.high_priority || 0}</div><div class="sub">score ≥ 5</div></div>
+      <div class="stat-card"><div class="label">Actioned Today</div><div class="value">${d.actioned_today || 0}</div><div class="sub">across all reps</div></div>
+      <div class="stat-card"><div class="label">Active Reps</div><div class="value">${d.active_reps || 0}</div><div class="sub">on the team</div></div>
+    `;
+    document.getElementById('headerMeta').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+  } catch(e) {
+    document.getElementById('overviewStats').innerHTML = '<div class="error-msg">Failed to load overview</div>';
+  }
+}
+
+async function loadTeamStats() {
+  try {
+    const r = await fetch('/api/admin/team-stats');
+    if (!r.ok) throw new Error('fetch failed');
+    const d = await r.json();
+    const reps = d.reps || [];
+    if (!reps.length) {
+      document.getElementById('teamBody').innerHTML = '<tr><td colspan="5" style="color:var(--fg-dim);padding:var(--space-lg);text-align:center;">No active reps</td></tr>';
+      return;
+    }
+    const rows = reps.map(r => {
+      const last = r.last_active ? new Date(r.last_active).toLocaleString() : '—';
+      return `<tr>
+        <td style="font-weight:600;color:var(--fg)">${esc(r.name)}</td>
+        <td>${r.accounts_assigned || 0}</td>
+        <td>${r.actioned_today || 0}</td>
+        <td>${r.scheduled_today || 0}</td>
+        <td style="color:var(--fg-dim);font-size:0.75rem;">${last}</td>
+      </tr>`;
+    });
+    document.getElementById('teamBody').innerHTML = rows.join('');
+  } catch(e) {
+    document.getElementById('teamBody').innerHTML = `<tr><td colspan="5" class="error-msg">Failed to load team stats</td></tr>`;
+  }
+}
+
+async function loadTopAccounts() {
+  try {
+    const r = await fetch('/api/admin/top-accounts');
+    if (!r.ok) throw new Error('fetch failed');
+    const d = await r.json();
+    const accounts = d.accounts || [];
+    if (!accounts.length) {
+      document.getElementById('topAccountsBody').innerHTML = '<tr><td colspan="5" style="color:var(--fg-dim);padding:var(--space-lg);text-align:center;">No accounts scored yet</td></tr>';
+      return;
+    }
+    const rows = accounts.map(a => {
+      const signals = buildSignalPills(a);
+      const score = a.score != null ? a.score : '—';
+      return `<tr>
+        <td style="font-weight:600;color:var(--fg)">${esc(a.company_name)}</td>
+        <td style="color:var(--fg-dim);font-size:0.8rem;">${esc(a.rep_name || '—')}</td>
+        <td><div class="signal-pills">${signals}</div></td>
+        <td style="font-weight:700;color:var(--fg);">${score}</td>
+        <td><span class="badge badge-${a.status || 'low'}">${a.status || 'low'}</span></td>
+      </tr>`;
+    });
+    document.getElementById('topAccountsBody').innerHTML = rows.join('');
+  } catch(e) {
+    document.getElementById('topAccountsBody').innerHTML = `<tr><td colspan="5" class="error-msg">Failed to load top accounts</td></tr>`;
+  }
+}
+
+async function loadSignalBreakdown() {
+  try {
+    const r = await fetch('/api/admin/signal-breakdown');
+    if (!r.ok) throw new Error('fetch failed');
+    const d = await r.json();
+    const signals = d.signals || [];
+
+    const getCount = (type) => {
+      const found = signals.find(s => s.signal_type === type);
+      return found ? parseInt(found.count, 10) : 0;
+    };
+
+    document.getElementById('signalBreakdown').innerHTML = `
+      <div class="stat-card" style="text-align:center;">
+        <div class="label">Funding</div>
+        <div class="value" style="color:var(--accent);">${getCount('funding')}</div>
+      </div>
+      <div class="stat-card" style="text-align:center;">
+        <div class="label">Hiring</div>
+        <div class="value" style="color:var(--success);">${getCount('hiring')}</div>
+      </div>
+      <div class="stat-card" style="text-align:center;">
+        <div class="label">CRM</div>
+        <div class="value" style="color:#a855f7;">${getCount('crm_activity')}</div>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('signalBreakdown').innerHTML = '<div class="error-msg">Failed to load signal breakdown</div>';
+  }
+}
+
+function buildSignalPills(account) {
+  let pills = [];
+  if (account.funding_score > 0) pills.push(`<span class="badge badge-funding">Funding</span>`);
+  if (account.hiring_score > 0) pills.push(`<span class="badge badge-hiring">Hiring</span>`);
+  if (account.crm_score > 0) pills.push(`<span class="badge badge-crm">CRM</span>`);
+  return pills.length ? pills.join('') : '<span style="color:var(--fg-dim);font-size:0.75rem;">—</span>';
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadOverview();
+loadTeamStats();
+loadTopAccounts();
+loadSignalBreakdown();
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — Import</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'import' } }) %>
+
+  <div class="dash-layout">
+    <div class="dash-header">
+      <h1>Import</h1>
+      <div class="flex-row">
+        <a href="/api/import/sample.csv" class="btn btn-secondary">Sample</a>
+        <a href="/help/articles/import-spreadsheet" class="btn btn-secondary">Help</a>
+      </div>
+    </div>
+
+    <div id="msg"></div>
+
+    <script>window.__csrf = <%- JSON.stringify(typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '') %>;</script>
+
+    <div class="card">
+      <div class="card-header"><h2>Bring in your accounts</h2></div>
+      <div class="card-body">
+        <div class="tabs">
+          <div class="tab is-active" data-tab="csv" onclick="switchTab('csv')">CSV / Excel</div>
+          <div class="tab" data-tab="sheets" onclick="switchTab('sheets')">Google Sheets</div>
+          <div class="tab" data-tab="ai" onclick="switchTab('ai')">AI prospect discovery</div>
+        </div>
+
+        <div data-pane="csv">
+          <p class="muted">Drag-drop a file (CSV, TSV, XLSX, XLS) or paste the CSV text below. Required columns: account name, domain, industry, employee count. Optional: ARR, tech stack, notes.</p>
+
+          <div class="form-group">
+            <label class="form-label">Upload file</label>
+            <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+              Drop a .csv / .xlsx file here, or click to browse.
+            </div>
+            <input id="fileInput" type="file" accept=".csv,.xlsx,.xls,.tsv" style="display:none" onchange="handleFile(this.files[0])">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">…or paste CSV</label>
+            <textarea class="form-textarea" id="csvText" rows="6" placeholder="company_name,domain,industry,employee_count,annual_revenue,tech_stack,notes
+Acme,acme.com,SaaS,120,12000000,&quot;stripe,aws&quot;,Q4 evaluation"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bulk-assign imported accounts to rep (email)</label>
+            <input class="form-input" id="assignRep" type="email" placeholder="leave blank to round-robin">
+          </div>
+
+          <div class="flex-row">
+            <button class="btn btn-primary" onclick="previewInput()">Preview</button>
+            <button class="btn btn-primary" id="csvCommit" style="display:none" onclick="commitInput()">Import</button>
+          </div>
+          <div id="csvPreview"></div>
+          <div id="importErrors"></div>
+          <div id="asyncProgress" style="display:none;">
+            <p class="muted" id="asyncStatus">Queued…</p>
+            <div class="progress"><div class="bar" id="asyncBar"></div></div>
+          </div>
+        </div>
+
+        <div data-pane="sheets" style="display:none">
+          <p class="muted">Paste a Google Sheets URL. If you've connected Google in Integrations, we use your OAuth token; otherwise the sheet must be set to "Anyone with the link can view".</p>
+          <div class="form-group">
+            <label class="form-label">Google Sheets URL</label>
+            <input class="form-input" id="sheetsUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0">
+          </div>
+          <button class="btn btn-primary" onclick="commitSheets()">Import</button>
+          <div id="sheetsResult" class="muted"></div>
+        </div>
+
+        <div data-pane="ai" style="display:none">
+          <p style="font-size:0.85rem;color:var(--fg-muted);margin-bottom:var(--space-lg);">Describe your ICP and SourcemAI will research matching prospects.</p>
+          <div class="form-group">
+            <label class="form-label">ICP description</label>
+            <textarea class="form-textarea" id="impIcp" placeholder="e.g. B2B SaaS, 50-500 employees, Series A-B, US-based"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max to import</label>
+            <input class="form-input" id="impLimit" type="number" value="20" min="1" max="50">
+          </div>
+          <button class="btn btn-primary" id="impBtn" onclick="discoverProspects()">Run</button>
+          <div id="impStatus" class="muted"></div>
+          <div id="impError" class="error-msg" style="display:none;"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+const CANONICAL_FIELDS = ['company_name','domain','industry','employee_count','annual_revenue','tech_stack','notes','contact_name','contact_email','contact_title','crm_account_id','rep_email'];
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('is-active', t.dataset.tab === name));
+  document.querySelectorAll('[data-pane]').forEach(p => p.style.display = (p.dataset.pane === name ? 'block' : 'none'));
+}
+
+function msg(text, type='success') {
+  const el = document.getElementById('msg');
+  el.innerHTML = `<div class="${type}-msg">${text}</div>`;
+  setTimeout(() => el.innerHTML = '', 5000);
+}
+
+function postJson(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-csrf-token': window.__csrf || '' },
+    body: JSON.stringify(body || {})
+  });
+}
+
+const dropZone = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('is-drag'); }));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('is-drag'); }));
+dropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+async function handleFile(file) {
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const r = await postJson('/api/import/upload', { filename: file.name, content_base64: b64 });
+  const data = await r.json();
+  if (!r.ok) {
+    document.getElementById('csvPreview').innerHTML = `<div class="error-msg">${escapeHtml(data.error || data.message || 'upload failed')}</div>`;
+    return;
+  }
+  document.getElementById('csvText').value = data.text || '';
+  renderPreview(data);
+  msg(`Parsed ${data.total} rows from ${file.name}`);
+}
+
+async function previewInput() {
+  const text = document.getElementById('csvText').value;
+  if (!text.trim()) { msg('Paste or upload a CSV first.', 'error'); return; }
+  const r = await postJson('/api/import/preview', { text, mode: 'csv' });
+  const data = await r.json();
+  if (!r.ok) { document.getElementById('csvPreview').innerHTML = `<div class="error-msg">${escapeHtml(data.error || 'preview failed')}</div>`; return; }
+  renderPreview(data);
+}
+
+function renderPreview(data) {
+  const preview = document.getElementById('csvPreview');
+  const headers = data.headers || [];
+  const rows = data.preview || [];
+  const headerOpts = ['<option value="">— ignore —</option>', ...headers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`)].join('');
+  window.__preview = data;
+  preview.innerHTML = `
+    <p class="muted">Showing first ${rows.length} of ${data.total} rows. Map each canonical field below.</p>
+    <table class="preview-table">
+      <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr>${headers.map(h => `<td>${escapeHtml(String(r[h]||'').slice(0,40))}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>
+    <div style="margin-top:8px;">
+      ${CANONICAL_FIELDS.map(canon => {
+        const current = (data.mapping && data.mapping[canon]) || '';
+        return `<div class="mapping-row"><label style="min-width:160px;font-size:0.78rem;font-weight:600;">${canon}</label>
+          <select data-canonical="${canon}" class="mappingSelect">${headerOpts}</select></div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('csvCommit').style.display = 'inline-flex';
+}
+
+async function commitInput() {
+  if (!window.__preview) return;
+  const mapping = {};
+  document.querySelectorAll('.mappingSelect').forEach(sel => {
+    if (sel.value) mapping[sel.dataset.canonical] = sel.value;
+  });
+  const text = document.getElementById('csvText').value;
+  const rep_email = document.getElementById('assignRep').value.trim();
+  const r = await postJson('/api/import/commit', { text, mode: 'csv', mapping, source: rep_email ? 'csv:assigned' : 'csv' });
+  const data = await r.json();
+  if (!r.ok) { msg(data.error || 'Import failed', 'error'); renderErrors(data); return; }
+  if (data.async) {
+    pollRun(data.runId);
+    document.getElementById('asyncProgress').style.display = 'block';
+    document.getElementById('asyncStatus').textContent = `Queued ${data.total} rows (run ${data.runId})…`;
+  } else {
+    msg(`Imported ${data.inserted} new, updated ${data.updated}, ${data.errors_count} errors (${data.total} rows).`);
+    renderErrors(data);
+    window.__preview = null; document.getElementById('csvCommit').style.display = 'none';
+  }
+}
+
+function renderErrors(data) {
+  const out = document.getElementById('importErrors');
+  const list = data && data.errors_detail;
+  if (!list || !list.length) { out.innerHTML = ''; return; }
+  out.innerHTML = `<details><summary class="error-msg">${list.length} row error${list.length>1?'s':''}</summary>
+    <ul style="font-size:0.78rem;color:var(--fg-muted);padding-left:24px;">${list.slice(0,50).map(e => `<li>row ${e.row_index}: ${escapeHtml(e.message)}</li>`).join('')}</ul></details>`;
+}
+
+async function pollRun(runId) {
+  try {
+    const r = await postJson('/api/import/run/' + runId, {});
+    const data = await r.json();
+    if (!r.ok) return;
+    const pct = data.total ? Math.round((data.processed_count / data.total) * 100) : 0;
+    document.getElementById('asyncBar').style.width = pct + '%';
+    document.getElementById('asyncStatus').textContent = `${data.status} — ${data.processed_count || 0} / ${data.total || 0} rows`;
+    if (data.status === 'completed') {
+      document.getElementById('asyncStatus').textContent = `Done. ${data.inserted} inserted, ${data.updated} updated, ${data.errors_count} errors.`;
+      msg(`Imported ${data.inserted}, updated ${data.updated}, ${data.errors_count} errors.`);
+      renderErrors({ errors_detail: data.errors_detail });
+      window.__preview = null; document.getElementById('csvCommit').style.display = 'none';
+      return;
+    }
+    if (data.status === 'failed') {
+      document.getElementById('asyncStatus').textContent = `Failed: ${(data.errors_detail && data.errors_detail[0] && data.errors_detail[0].message) || 'see logs'}`;
+      return;
+    }
+    setTimeout(() => pollRun(runId), 1500);
+  } catch (e) {
+    setTimeout(() => pollRun(runId), 3000);
+  }
+}
+
+async function commitSheets() {
+  const url = document.getElementById('sheetsUrl').value.trim();
+  if (!url) { msg('Paste a Sheets URL.', 'error'); return; }
+  const r = await postJson('/api/import/sheets', { url });
+  const data = await r.json();
+  const out = document.getElementById('sheetsResult');
+  if (r.status === 409 && data.error === 'google-not-connected' && data.redirect) {
+    msg(data.redirect, 'success');
+    setTimeout(() => { window.location.href = data.redirect; }, 600);
+    return;
+  }
+  if (!r.ok) { out.innerHTML = `<div class="error-msg">${escapeHtml(data.error || data.message || 'failed')}</div>`; return; }
+  out.textContent = `Imported ${data.inserted} new, updated ${data.updated}, ${data.errors_count} errors.`;
+}
+
+async function discoverProspects() {
+  const icp_description = document.getElementById('impIcp').value.trim();
+  const limit = parseInt(document.getElementById('impLimit').value) || 20;
+  const errEl = document.getElementById('impError');
+  errEl.style.display = 'none';
+  if (!icp_description) { errEl.textContent = 'ICP description required.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('impBtn');
+  btn.disabled = true; btn.textContent = 'Researching…';
+  const status = document.getElementById('impStatus');
+  status.textContent = 'Researching prospects…';
+  try {
+    const r = await fetch('/api/prospects/discover', { method: 'POST', headers: {'Content-Type':'application/json','x-csrf-token': window.__csrf || ''}, body: JSON.stringify({ icp_description, limit }) });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    status.textContent = `Found and saved ${data.discovered} prospects.`;
+    msg(`Imported ${data.discovered} prospects.`);
+  } catch(e) {
+    errEl.textContent = e.message || 'Import failed.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run';
+  }
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

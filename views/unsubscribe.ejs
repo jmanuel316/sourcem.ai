@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Unsubscribe — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="legal-page">
+  <main class="legal-main">
+    <h1>Unsubscribe</h1>
+    <p>Click the button below to stop receiving transactional emails for this address.</p>
+    <form method="POST" action="/unsubscribe">
+      <input type="hidden" name="token" value="<%= token %>">
+      <button type="submit" class="btn-primary">Confirm unsubscribe</button>
+    </form>
+    <p class="muted">You'll still receive essential service emails (password reset, billing) until you cancel your account.</p>
+  </main>
+</body>
+</html>

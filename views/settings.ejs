@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SourcemAI — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'settings' } }) %>
+
+  <div class="settings-layout">
+    <h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: var(--space-xl);">Settings</h1>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-header"><h2>Organization</h2></div>
+        <div class="card-body">
+          <p class="muted">Workspace name and billing email.</p>
+          <a href="/settings/org" class="btn btn-primary">Manage</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Team</h2></div>
+        <div class="card-body">
+          <p class="muted">Invite reps and deactivate team members.</p>
+          <a href="/settings/team" class="btn btn-primary">Manage</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Account context</h2></div>
+        <div class="card-body">
+          <p class="muted">Edit per-account company, industry, and CRM linkage.</p>
+          <a href="/settings/account-context" class="btn btn-primary">Edit</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Integrations</h2></div>
+        <div class="card-body">
+          <p class="muted">Connect your CRM and other tools to enrich signal scoring.</p>
+          <a href="/settings/integrations" class="btn btn-primary">Open</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Notifications</h2></div>
+        <div class="card-body">
+          <p class="muted">Digest time, signal thresholds, and channels.</p>
+          <a href="/settings/notifications" class="btn btn-primary">Open</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Billing</h2></div>
+        <div class="card-body">
+          <p class="muted">Manage plan, seats, and invoices.</p>
+          <a href="/settings/billing" class="btn btn-primary">Open</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>API tokens</h2></div>
+        <div class="card-body">
+          <p class="muted">Mint and revoke API tokens. Admin only.</p>
+          <a href="/settings/api-keys" class="btn btn-primary">Manage</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

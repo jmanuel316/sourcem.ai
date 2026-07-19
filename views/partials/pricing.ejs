@@ -1,0 +1,58 @@
+<!-- Pricing section -->
+<section class="pricing-section" id="pricing">
+  <div class="pricing-inner">
+    <p class="section-label">Pricing</p>
+    <h2 class="section-headline">Two tiers. One mission — close more.</h2>
+    <p class="section-sub">Annual billing — no monthly option.</p>
+
+    <div class="pricing-grid">
+
+      <!-- Solidify — org-level, primary -->
+      <div class="pricing-card pricing-card--primary">
+        <div class="pricing-card-gold-border"></div>
+        <div class="pricing-card-header">
+          <div class="pricing-plan-name">Solidify</div>
+          <div class="pricing-badge pricing-badge--primary">Team digest</div>
+          <div class="pricing-price">$1,599<span class="pricing-period">/year</span></div>
+          <div class="pricing-billed">per organization · billed annually</div>
+        </div>
+        <ul class="pricing-features">
+          <li><strong>Team-wide signal digest</strong> — ranked account recommendations delivered every morning via mobile PWA for the whole team</li>
+          <li><strong>GTM coaching dashboard</strong> — spot cross-team patterns, manage pipeline health across all reps</li>
+          <li><strong>Account prioritization</strong> — AI-ranked account list for the entire team, refreshed daily</li>
+          <li><strong>Funding, hiring &amp; CRM signals</strong> — funding, hiring, and CRM activity correlated per account</li>
+          <li><strong>Mobile PWA + push notifications</strong> — installable, no app store required</li>
+        </ul>
+        <form method="POST" action="/api/billing/checkout" class="pricing-cta-form">
+          <input type="hidden" name="plan" value="solidify">
+          <input type="hidden" name="source" value="pricing-page">
+          <button type="submit" class="btn-primary pricing-cta">Get Solidify</button>
+        </form>
+      </div>
+
+      <!-- Execute — per-seat add-on -->
+      <div class="pricing-card pricing-card--secondary">
+        <div class="pricing-card-header">
+          <div class="pricing-plan-name">Execute</div>
+          <div class="pricing-badge pricing-badge--secondary">Per-seat</div>
+          <div class="pricing-price">$109<span class="pricing-period">/seat/year</span></div>
+          <div class="pricing-billed">per seat · billed annually · requires Solidify</div>
+        </div>
+        <ul class="pricing-features">
+          <li><strong>Personal account recommendations</strong> — your prioritized accounts, ranked by signal strength</li>
+          <li><strong>Rep-level coaching signals</strong> — micro-alerts on accounts showing buying intent or champion movement</li>
+          <li><strong>Individual prioritization</strong> — focus list built for one rep's territory and ICP</li>
+          <li><strong>Mobile digest + push</strong> — morning digest and real-time alerts delivered straight to your phone</li>
+        </ul>
+        <form method="POST" action="/api/billing/checkout" class="pricing-cta-form">
+          <input type="hidden" name="plan" value="execute">
+          <input type="hidden" name="source" value="pricing-page">
+          <button type="submit" class="btn-secondary pricing-cta">Add Execute</button>
+        </form>
+      </div>
+
+    </div>
+
+    <p class="pricing-foot">14-day Solidify trial — no card required. Cancel anytime from Settings → Billing.</p>
+  </div>
+</section>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Welcome to SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { current: 'onboarding' }) %>
+  <main class="onboarding">
+    <div class="onboarding-card">
+      <h1>Your first digest runs overnight at 02:00</h1>
+      <p class="lead">In the meantime, here's how to set things up:</p>
+
+      <ol class="onboarding-steps">
+        <li class="step <%= (progress && progress.completed_steps && progress.completed_steps.includes('welcome')) ? 'is-done' : '' %>">
+          <strong>Welcome</strong> — you're here.
+        </li>
+        <li class="step <%= (progress && progress.completed_steps && progress.completed_steps.includes('choose_integrations')) ? 'is-done' : '' %>">
+          <strong>Pick your integrations</strong> — go to <a href="/settings/integrations">Integrations</a> and connect at least one source.
+        </li>
+        <li class="step <%= (progress && progress.completed_steps && progress.completed_steps.includes('connect_source')) ? 'is-done' : '' %>">
+          <strong>Connect ≥1 source</strong> — connect a CRM (HubSpot/Salesforce), upload a CSV, or paste a Google Sheet URL.
+        </li>
+        <li class="step <%= (progress && progress.completed_steps && progress.completed_steps.includes('verify_digest')) ? 'is-done' : '' %>">
+          <strong>Verify your digest</strong> — your first ranked account list arrives automatically after the next batch run.
+        </li>
+        <li class="step <%= (progress && progress.completed_steps && progress.completed_steps.includes('invite_teammates')) ? 'is-done' : '' %>">
+          <strong>Invite teammates</strong> — <a href="/settings/integrations">Settings → Users</a>.
+        </li>
+      </ol>
+
+      <% if (!hasIntegration) { %>
+        <div class="callout">
+          <h3>No integrations yet</h3>
+          <p>No data in means no digest. Connect a CRM or upload a CSV to get started.</p>
+          <form method="POST" action="/onboarding/advance" style="display:inline">
+            <input type="hidden" name="step" value="choose_integrations">
+            <button type="submit" class="btn-secondary">Dismiss</button>
+          </form>
+        </div>
+      <% } %>
+
+      <% if (trialEndsAt) { %>
+        <p class="muted">Your 14-day Solidify trial ends <strong><%= new Date(trialEndsAt).toLocaleDateString() %></strong>. <a href="/settings/billing">Add billing →</a></p>
+      <% } %>
+
+      <div class="onboarding-cta">
+        <a href="/digest" class="btn-primary">Open digest</a>
+        <% if (!hasIntegration) { %>
+          <form method="POST" action="/onboarding/run-sample-digest" style="display:inline">
+            <button type="submit" class="btn-secondary">Run sample</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

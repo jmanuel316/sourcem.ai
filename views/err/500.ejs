@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Something went wrong — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="page-err">
+  <main class="err-card">
+    <h1>Something went wrong</h1>
+    <p>We've been notified and are looking into it. Please try again in a moment.</p>
+    <% if (typeof requestId !== 'undefined' && requestId) { %>
+      <p class="muted">Reference: <code><%= requestId %></code></p>
+    <% } %>
+    <div class="err-cta">
+      <a href="/" class="btn-primary">Home</a>
+      <a href="/contact" class="btn-secondary">Report</a>
+    </div>
+  </main>
+</body>
+</html>

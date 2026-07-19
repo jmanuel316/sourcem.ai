@@ -1,0 +1,20 @@
+{
+  "name": "SourcemAI Sales Digest",
+  "short_name": "Digest",
+  "description": "Daily ranked account recommendations for sales reps",
+  "start_url": "/digest/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#D4A843",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://pub-629428d185ca4960a0a73c850d32294b.r2.dev/company_160798/images/6ac4f552-fd8a-4c97-a90d-230e373fff98.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "en"
+}

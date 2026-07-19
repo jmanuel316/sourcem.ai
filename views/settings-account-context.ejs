@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Account context — SourcemAI</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/app-nav', { nav: { current: 'settings' } }) %>
+  <main class="settings-main">
+    <h1>Account context</h1>
+    <p class="muted">Edit per-account fields used for scoring and CRM linkage.</p>
+    <% if (accounts && accounts.length) { %>
+      <table class="data-table">
+        <thead><tr><th>Company</th><th>Industry</th><th>Score</th><th></th></tr></thead>
+        <tbody>
+        <% accounts.forEach(a => { %>
+          <tr>
+            <td><%= a.company_name || '(unnamed)' %></td>
+            <td><%= a.industry || '—' %></td>
+            <td><%= a.current_score != null ? a.current_score : '—' %></td>
+            <td><a href="/settings/account/<%= a.id %>">Manage</a></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <%- include('partials/empty-state', { title: 'No accounts yet', body: 'Import accounts from a CSV or run AI discovery to start scoring.', ctaText: 'Import', ctaHref: '/import' }) %>
+    <% } %>
+  </main>
+</body>
+</html>
