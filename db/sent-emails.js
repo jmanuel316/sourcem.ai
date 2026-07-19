@@ -11,6 +11,21 @@ async function createSentEmail(data) {
   return result.rows[0];
 }
 
+/**
+ * Updates the placeholder Polsia email ID with the definitive 
+ * identifier returned from the network proxy after background delivery.
+ */
+async function updatePolsiaId(prospectId, campaignId, realId) {
+  const result = await pool.query(
+    `UPDATE sent_emails 
+     SET polsia_email_id = $1
+     WHERE prospect_id = $2 AND campaign_id = $3
+     RETURNING *`,
+    [realId, prospectId, campaignId]
+  );
+  return result.rows[0] || null;
+}
+
 async function getSentEmailsForProspect(prospectId) {
   const result = await pool.query('SELECT * FROM sent_emails WHERE prospect_id = $1 ORDER BY sent_at DESC', [prospectId]);
   return result.rows;
@@ -62,6 +77,7 @@ async function getReplyMetricsForRep(repId) {
 
 module.exports = {
   createSentEmail,
+  updatePolsiaId, // <-- Exported to expose method to queue-runner.js
   getSentEmailsForProspect,
   getSentEmailById,
   getSentEmailByUuid,
