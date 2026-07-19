@@ -25,4 +25,8 @@
     "web-push": "^3.6.7",
     "xlsx": "^0.18.5"
   }
+  "scripts": {
+  "start": "node server.js",
+  "worker": "node jobs/queue-runner.js"
+  }
 }
